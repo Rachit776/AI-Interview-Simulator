@@ -1,0 +1,68 @@
+.contact-container {
+  max-width: 600px;
+  margin: 60px auto;
+  padding: 40px 30px;
+  background-color: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  transition: transform 0.3s ease;
+}
+
+.contact-container:hover {
+  transform: translateY(-5px);
+}
+
+.profile-pic {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 20px;
+  border: 4px solid #e4e4e4;
+}
+
+.created-by {
+  font-size: 18px;
+  color: #666;
+  margin: 5px 0;
+}
+
+.name {
+  font-size: 26px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0;
+}
+
+h2 {
+  font-size: 20px;
+  margin-top: 25px;
+  color: #222;
+}
+
+.summary {
+  margin: 20px 0;
+  font-size: 15px;
+  color: #444;
+  line-height: 1.6;
+  padding: 0 10px;
+}
+
+.links {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 25px;
+}
+
+.links a {
+  color: #0072b1;
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.links a:hover {
+  color: #005582;
+  transform: scale(1.1);
+}
