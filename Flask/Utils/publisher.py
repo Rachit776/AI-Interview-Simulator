@@ -6,7 +6,7 @@ def publish_message(queue_name, message):
     connection = pika.BlockingConnection(pika.ConnectionParameters(
         host='localhost',  # Local RabbitMQ server
         virtual_host='/',  # Virtual host 'major'
-        credentials=pika.PlainCredentials('major', 'major')  # Username and password
+        credentials=pika.PlainCredentials('', '')  # Username and password
     ))
     channel = connection.channel()
 
