@@ -12,7 +12,7 @@ import ContactUs from "./pages/ContactUs";
 // for menuPages
 import Frontend from "./pages/menuPages/Frontend";
 import Backend from "./pages/menuPages/Backend";
-import DevOps from "./pages/menuPages/DevOps";
+import DevOps from "./pages/menuPages/Devops";
 import MachineLearning from "./pages/menuPages/MachineLearning";
 import SystemDesign from "./pages/menuPages/SystemDesign";
 import GraphicDesign from "./pages/menuPages/GraphicDesign";
