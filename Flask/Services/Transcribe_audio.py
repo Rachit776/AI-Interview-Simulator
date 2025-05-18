@@ -1,5 +1,3 @@
-
-
 import os
 import whisper
 from Utils.publisher import publish_message
@@ -9,7 +7,7 @@ import json
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 # Load the model on the selected device
-model = whisper.load_model("small.en", device=device)
+model = whisper.load_model("tiny.en", device=device)
 
 def transcribe_audio(audio_path, metadata):
     """
