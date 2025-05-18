@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaChevronRight, FaCheck } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./Dashboard.css";
 
 const Dashboard = () => {
   const [selectedMenu, setSelectedMenu] = useState(null);
+  const navigate = useNavigate();
 
   const menus = [
     "Frontend",
@@ -15,27 +16,56 @@ const Dashboard = () => {
     "Graphic Design",
   ];
 
+  // 🔐 Check token on load
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      navigate("/login"); // Redirect to login if no token
+    }
+
+    // Optionally: ping backend to verify token
+    const verifyToken = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_NODE_ENDPOINT}/auth/verify`, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+        if (!res.ok) {
+          // Token invalid or expired
+          localStorage.removeItem("token");
+          navigate("/login");
+        }
+      } catch (error) {
+        console.error("Token verification failed:", error);
+        navigate("/login");
+      }
+    };
+
+    verifyToken();
+  }, [navigate]);
+
   const handleMenuClick = (menu) => {
     setSelectedMenu(menu);
   };
 
   const getMenuRoute = (menu) => {
-    // Map menu to the corresponding route
     switch (menu) {
       case "Frontend":
         return "/dashboard/frontend";
       case "Backend":
-        return "/dashboard/backend"; 
+        return "/dashboard/backend";
       case "DevOps":
-        return "/dashboard/devops"; 
+        return "/dashboard/devops";
       case "Machine Learning":
-        return "/dashboard/machine-learning"; 
+        return "/dashboard/machine-learning";
       case "System Design":
-        return "/dashboard/system-design"; 
+        return "/dashboard/system-design";
       case "Graphic Design":
-        return "/dashboard/graphic-design"; 
+        return "/dashboard/graphic-design";
       default:
-        return "/dashboard"; // Default route if no menu is selected
+        return "/dashboard";
     }
   };
 
@@ -66,7 +96,7 @@ const Dashboard = () => {
           to={selectedMenu ? getMenuRoute(selectedMenu) : "#"}
           className={`next-button ${!selectedMenu ? "disabled" : ""}`}
         >
-          Next <FaChevronRight /> 
+          Next <FaChevronRight />
         </Link>
       </div>
     </div>
