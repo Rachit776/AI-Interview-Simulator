@@ -23,7 +23,7 @@ const QuestionPage = () => {
 		const loggedInEmail = localStorage.getItem("loggedInEmail");
 		if (loggedInEmail) {
 			// Simulate a call to fetch the last session ID for the user
-			fetch(`${VITE_NODE_ENDPOINT}/messages/get-session-id`, {
+			fetch(`${VITE_NODE_ENDPOINT}/api/messages/get-session-id`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
