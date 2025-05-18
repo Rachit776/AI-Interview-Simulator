@@ -1,50 +1,51 @@
 from flask import request, jsonify
 from Utils.cosine_similarity import calculate_cosine_similarity
 import json
+import os
 
-# Load questions from JSON file
-with open("QuestionSet.json", "r") as f:
+# Safely load questions data
+question_file_path = os.path.join(os.path.dirname(__file__), '../QuestionSet.json')
+with open(question_file_path, "r") as f:
     questions_data = json.load(f)
 
-
 def recommend_questions():
-    # Get user expertise and level from the request
-    user_data = request.get_json()  # Add parentheses to actually call the method
+    if request.method == "GET":
+        return jsonify({"message": "Please use POST to recommend questions."}), 405
+
+    try:
+        user_data = request.get_json(force=True)
+    except Exception as e:
+        return jsonify({"error": f"Invalid JSON payload: {str(e)}"}), 400
+
     user_expertise = user_data.get("expertise", [])
     user_level = user_data.get("level")
 
     # Validate input
-    if not user_expertise:
-        return jsonify({"error": "No expertise provided"}), 400
+    if not user_expertise or not isinstance(user_expertise, list):
+        return jsonify({"error": "Invalid or missing 'expertise'. Expected a list."}), 400
     if not user_level:
-        return jsonify({"error": "No level provided"}), 400
+        return jsonify({"error": "Missing 'level' field."}), 400
 
     # Filter questions by level
-    filtered_questions = [
-        q for q in questions_data if q.get("level") == user_level]
+    filtered_questions = [q for q in questions_data if q.get("level") == user_level]
 
-    # Calculate cosine similarity scores for each question
+    if not filtered_questions:
+        return jsonify({"error": f"No questions found for level '{user_level}'."}), 404
+
+    # Calculate cosine similarity scores
     scored_questions = []
     for question in filtered_questions:
-        question_keywords = question["keywords"]
-        similarity_score = calculate_cosine_similarity(
-            user_expertise, question_keywords)
-        scored_questions.append(
-            (question["id"], question["question"], similarity_score))
+        question_keywords = question.get("keywords", [])
+        similarity_score = calculate_cosine_similarity(user_expertise, question_keywords)
+        scored_questions.append((question["id"], question["question"], similarity_score))
 
-    # Sorting the scored_questions based on the score (descending order)
-    top_questions = sorted(
-        scored_questions, key=lambda x: x[2], reverse=True)[:5]
+    # Sort and take top 5
+    top_questions = sorted(scored_questions, key=lambda x: x[2], reverse=True)[:5]
 
-    # Extracting only the question IDs from the top_questions
-    top_questions_list = [q[0] for q in top_questions]
-
-    # Now creating a list of dictionaries for the top questions
+    # Build response list
     top_questions_dict_list = [
         {"question_id": q[0], "question_text": q[1], "score": q[2]}
-        for q in top_questions if q[0] in top_questions_list
+        for q in top_questions
     ]
 
-    print(f'****top_questions_dict_list:: {top_questions_dict_list}')
-    # Return the top 5 questions
     return jsonify({"recommended_questions": top_questions_dict_list}), 200
