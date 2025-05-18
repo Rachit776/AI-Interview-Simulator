@@ -18,15 +18,8 @@ function isValidJson(str) {
 
 export async function startConsumer() {
   try {
-    //const connection = await amqp.connect(rabbitmq_url);
-    const connection = await amqp.connect({
-      protocol: 'amqps',
-      hostname: process.env.RABBITMQ_HOST,
-      port: parseInt(process.env.RABBITMQ_PORT),
-      username: process.env.RABBITMQ_USER,
-      passwword: process.env.RABBITMQ_PASS,
-      frameMax: 8192, // Must be >= 8192
-    });
+    
+    const connection = await amqp.connect(rabbitmq_url);
     
     const channel = await connection.createChannel();
 
