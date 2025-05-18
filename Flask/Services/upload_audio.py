@@ -1,4 +1,5 @@
 import os
+import logging
 from config import UPLOAD_FOLDER
 from flask import request, jsonify
 from multiprocessing import Process
@@ -39,6 +40,7 @@ def upload_audio():
     # Start the transcription in a background process (using multiprocessing)
     #transcribe_audio(wav_file_path, metadata)
     process = Process(target=transcribe_audio, args=(wav_file_path, metadata))
+    process.daemon = True
     process.start()
 
     # Provide the URL to access the uploaded audio file
