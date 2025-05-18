@@ -1,5 +1,4 @@
 import os
-import logging
 from config import UPLOAD_FOLDER
 from flask import request, jsonify
 from multiprocessing import Process
