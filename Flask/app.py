@@ -2,7 +2,7 @@ from flask import Flask
 from flask_cors import CORS
 from Services.recommemendation_engine import recommend_questions
 from Services.upload_audio import upload_audio
-
+from Utils import download_nltk_data
 app = Flask(__name__)
 CORS(app)  # Allow all origins by default
 
