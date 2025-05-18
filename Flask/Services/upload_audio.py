@@ -37,9 +37,7 @@ def upload_audio():
     }
 
     # Start the transcription in a background process (using multiprocessing)
-    transcription_process = Process(
-        target=transcribe_audio, args=(wav_file_path, metadata))
-    transcription_process.start()
+    transcribe_audio(wav_file_path, metadata)
 
     # Provide the URL to access the uploaded audio file
     file_url = f"/uploads/{os.path.basename(wav_file_path)}"
