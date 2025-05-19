@@ -1,51 +1,72 @@
 import os
-from config import UPLOAD_FOLDER
+import traceback
 from flask import request, jsonify
 from multiprocessing import Process
+from config import UPLOAD_FOLDER
 from Utils.convert_to_wav import convert_to_wav
 from Services.Transcribe_audio import transcribe_audio
 from Utils.generate_filename import generate_timestamp_based_filename
 
+# Allowed audio file extensions
+ALLOWED_EXTENSIONS = {'wav', 'mp3', 'm4a', 'aac'}
 
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def upload_audio():
     if 'file' not in request.files:
-        return jsonify({"error": "No file part"}), 400
+        return jsonify({"error": "No file part in the request"}), 400
 
     file = request.files['file']
 
-    if file.filename == '':
-        return jsonify({"error": "No selected file"}), 400
+    if not file or file.filename == '':
+        return jsonify({"error": "No file selected"}), 400
 
-    # Generate a unique filename using timestamp and random suffix
+    if not allowed_file(file.filename):
+        return jsonify({"error": "Unsupported file type"}), 400
+
+    # Ensure upload folder exists
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+    # Generate a unique filename
     unique_filename = generate_timestamp_based_filename(file.filename)
+    original_file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
 
-    # Save the audio file
-    file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
-    file.save(file_path)
+    try:
+        # Save original file
+        file.save(original_file_path)
 
-    # Convert to WAV format (if needed)
-    wav_file_path = convert_to_wav(file_path)
-    metadata = {
-        "file_name": file.filename,
-        "unique_filename": unique_filename,
-        "question_id": request.form.get("id"),
-        "question": request.form.get("question"),
-        "token": request.form.get("token"),
-        "loggedInEmail": request.form.get("loggedInEmail"),
-        "session_id": request.form.get("session_id")
-    }
+        # Convert to WAV format if needed
+        wav_file_path = convert_to_wav(original_file_path)
 
-    # Start the transcription in a background process (using multiprocessing)
-    #transcribe_audio(wav_file_path, metadata)
-    process = Process(target=transcribe_audio, args=(wav_file_path, metadata))
-    process.daemon = True
-    process.start()
+        # Delete original file if different from WAV
+        if wav_file_path != original_file_path and os.path.exists(original_file_path):
+            os.remove(original_file_path)
 
-    # Provide the URL to access the uploaded audio file
-    file_url = f"/uploads/{os.path.basename(wav_file_path)}"
+        # Metadata from form
+        metadata = {
+            "file_name": file.filename,
+            "unique_filename": unique_filename,
+            "question_id": request.form.get("id"),
+            "question": request.form.get("question"),
+            "token": request.form.get("token"),
+            "loggedInEmail": request.form.get("loggedInEmail"),
+            "session_id": request.form.get("session_id")
+        }
 
-    return jsonify({
-        "message": "Audio received and transcription started in the background.",
-        "file_url": file_url
-    }), 200
+        # Start background transcription
+        process = Process(target=transcribe_audio, args=(wav_file_path, metadata))
+        process.daemon = True
+        process.start()
+
+        # Response
+        return jsonify({
+            "message": "Audio uploaded and transcription started.",
+            "file_url": f"/uploads/{os.path.basename(wav_file_path)}"
+        }), 200
+
+    except Exception as e:
+        # Print full traceback for Render logs
+        print("[ERROR] Upload failed:")
+        traceback.print_exc()
+        return jsonify({"error": "Failed to process audio file"}), 500

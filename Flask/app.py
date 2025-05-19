@@ -1,23 +1,24 @@
 import os
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_cors import CORS
 from Services.recommemendation_engine import recommend_questions
 from Services.upload_audio import upload_audio
 from Utils import download_nltk_data
+from config import UPLOAD_FOLDER
 
 # Initialize Flask app
 app = Flask(__name__)
 
-# Allow Cross-Origin Resource Sharing
+# Set upload folder
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Enable CORS
 CORS(app)
 
-# Optional: Download NLTK data on startup (make sure it’s lightweight and idempotent)
+# Optional: Download NLTK data
 download_nltk_data.download()
 
-# Set upload folder from environment or default
-app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', './uploads')
-
-# Enable CORS headers manually for all responses
+# Enable CORS headers manually
 @app.after_request
 def after_request(response):
     response.headers.add('Access-Control-Allow-Origin', '*')
@@ -25,16 +26,21 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
     return response
 
-# Register routes
-app.add_url_rule('/recommend-questions', 'recommend_questions', recommend_questions, methods=['POST'])
-app.add_url_rule('/upload', 'upload_audio', upload_audio, methods=['POST'])
-
 # Health check route
 @app.route("/")
 def index():
     return "Working"
 
-# Start the Flask app (for local development only)
+# Static file serving route for uploaded files
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+# Register routes
+app.add_url_rule('/recommend-questions', 'recommend_questions', recommend_questions, methods=['POST'])
+app.add_url_rule('/upload', 'upload_audio', upload_audio, methods=['POST'])
+
+# Start the Flask app (for local dev; Render uses gunicorn)
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Render sets PORT env var automatically
+    port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True, threaded=True)

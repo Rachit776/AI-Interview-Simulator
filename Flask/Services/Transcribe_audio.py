@@ -4,47 +4,66 @@ from Utils.publisher import publish_message
 import torch
 from Services.answer_match_engine import answer_match
 import json
+import traceback
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-# Load the model on the selected device
 model = whisper.load_model("tiny.en", device=device)
 
 def transcribe_audio(audio_path, metadata):
     """
-    Transcribe audio using the Whisper model on the specified device (GPU or CPU).
-    The transcription result is printed to the console.
+    Transcribe audio using Whisper model on the specified device (GPU or CPU).
+    Sends transcription and answer match report via a message publisher.
+    Cleans up the audio file after processing.
     """
+    pid = os.getpid()
+    print(f"\n-- Process {pid} starting transcription for file: {audio_path}")
+
     try:
-        pid = os.getpid()  # Get the process ID
-        print(f"\n--Process {pid} is starting to process file: {audio_path}")
-
-        # Perform transcription
-        print(f"\n[*]Transcribing audio: {audio_path}\n")
+        print(f"[*] Transcribing audio: {audio_path}")
         result = model.transcribe(audio_path, fp16=(device == "cuda"))
-        print(f'\nTranscribed text: {result["text"]}\n')
-        print(f'\n\n--- metadata:: {metadata}\n\n')
-        if result['text']:
-            try:
-                report = answer_match(
-                    metadata['question_id'], result['text'])
-            except Exception as e:
-                print(f"Error in answer matching: {str(e)}")
+        transcribed_text = result.get("text", "").strip()
+        print(f"[+] Transcribed text: {transcribed_text}")
 
-            data_to_send = {"id": metadata["question_id"], "question": metadata["question"], "transcribed_text": result["text"],
-                            "token": metadata["token"], "loggedInEmail": metadata["loggedInEmail"], "session_id": metadata["session_id"], "report": report}
-            print(f'\n------ data_to_send:: {data_to_send} ----\n')
-            try:
-                publish_message("transcribed-text", json.dumps(data_to_send))
-            except Exception as e:
-                print(f"Error publishing message: {str(e)}")
-        else:
-            print("f\nTranscribed text is empty")
+        if not transcribed_text:
+            print("[!] Transcribed text is empty. Skipping further processing.")
+            return
+
+        # Generate answer match report
+        try:
+            report = answer_match(metadata.get('question_id'), transcribed_text)
+        except Exception as e:
+            print(f"[ERROR] answer_match failed: {str(e)}")
+            traceback.print_exc()
+            report = None
+
+        data_to_send = {
+            "id": metadata.get("question_id"),
+            "question": metadata.get("question"),
+            "transcribed_text": transcribed_text,
+            "token": metadata.get("token"),
+            "loggedInEmail": metadata.get("loggedInEmail"),
+            "session_id": metadata.get("session_id"),
+            "report": report
+        }
+
+        print(f"[DEBUG] Data to publish: {data_to_send}")
+
+        try:
+            publish_message("transcribed-text", json.dumps(data_to_send))
+            print("[+] Published transcribed text message successfully.")
+        except Exception as e:
+            print(f"[ERROR] Publishing message failed: {str(e)}")
+            traceback.print_exc()
+
     except Exception as e:
-        print(f"Error during transcription of {audio_path}: {str(e)}")
+        print(f"[ERROR] Transcription failed for {audio_path}: {str(e)}")
+        traceback.print_exc()
+
     finally:
+        # Clean up audio file
         if os.path.exists(audio_path):
             try:
                 os.remove(audio_path)
-                print(f"File {audio_path} removed successfully.")
+                print(f"[INFO] Removed file: {audio_path}")
             except Exception as e:
-                print(f"Error removing file {audio_path}: {str(e)}")
+                print(f"[ERROR] Failed to remove file {audio_path}: {str(e)}")
