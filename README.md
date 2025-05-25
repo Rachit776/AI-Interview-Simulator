@@ -129,8 +129,3 @@ This project is open source and available under the MIT License.
 ## 👥 Authors
 
 - Initial work and maintenance by the AI Interview Simulator team
-
-## 🙏 Acknowledgments
-
-- Thanks to all contributors who have helped shape this project
-- Special thanks to the open-source community for the tools and libraries used 
